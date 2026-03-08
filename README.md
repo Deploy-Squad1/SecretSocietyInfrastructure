@@ -54,3 +54,4 @@ terraform apply
 - AWS CLI credentials must be configured locally.
 - AWS region: eu-north-1 (defined in Terraform provider configuration).
 - S3 media storage bucket is used by map-service to generate presigned URLs for uploads.
+

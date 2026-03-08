@@ -26,12 +26,12 @@ resource "aws_ecr_lifecycle_policy" "cleanup" {
   policy = jsonencode({
     rules = [{
       rulePriority = 1
-      description  = "Keep last 10 images"
+      description  = "Keep last 5 images"
 
       selection = {
         tagStatus   = "any"
         countType   = "imageCountMoreThan"
-        countNumber = 10
+        countNumber = 5
       }
 
       action = {

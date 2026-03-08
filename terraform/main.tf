@@ -9,3 +9,7 @@ module "ecr" {
     "voting-service"
   ]
 }
+
+module "s3" {
+  source = "./modules/s3"
+}

@@ -61,7 +61,8 @@ resource "aws_iam_user_policy" "map_service_s3" {
         Action = [
           "s3:PutObject",
           "s3:GetObject",
-          "s3:DeleteObject"
+          "s3:DeleteObject",
+          "s3:ListBucket"
         ]
         Resource = "${aws_s3_bucket.media.arn}/*"
       },

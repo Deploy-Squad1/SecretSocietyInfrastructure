@@ -23,6 +23,19 @@ Currently managed resources:
 - AWS credentials with required permissions.
 - pre-commit (optional but recommended)
 
+## Map service configuration
+
+The map-service requires AWS credentials and bucket configuration via environment variables.
+
+Example .env configuration:
+
+AWS_ACCESS_KEY_ID=<access_key>\
+AWS_SECRET_ACCESS_KEY=<secret_key>\
+AWS_BUCKET_NAME=secret-society-media-ds\
+AWS_REGION=eu-north-1
+
+These credentials correspond to the 'map-service' IAM user created by Terraform.
+
 ## Usage
 
 Export AWS profile before running Terraform:
@@ -54,4 +67,3 @@ terraform apply
 - AWS CLI credentials must be configured locally.
 - AWS region: eu-north-1 (defined in Terraform provider configuration).
 - S3 media storage bucket is used by map-service to generate presigned URLs for uploads.
-

@@ -7,6 +7,7 @@ Currently managed resources:
 - AWS ECR repositories for project microservices
 - S3 bucket for media storage
 - IAM user for map-service with S3 permissions
+- AWS Secrets Manager for service credentials
 - Terraform remote state stored in S3
 
 ## Repositories created
@@ -27,14 +28,20 @@ Currently managed resources:
 
 The map-service requires AWS credentials and bucket configuration via environment variables.
 
-Example .env configuration:
-
-AWS_ACCESS_KEY_ID=<access_key>\
-AWS_SECRET_ACCESS_KEY=<secret_key>\
-AWS_BUCKET_NAME=secret-society-media-ds\
-AWS_REGION=eu-north-1
-
 These credentials correspond to the 'map-service' IAM user created by Terraform.
+
+## Secrets Management
+
+Sensitive credentials are stored in AWS Secrets Manager. Secret currently used by the project:
+
+secret-society/map-service
+
+It contains:
+
+AWS_ACCESS_KEY_ID  
+AWS_SECRET_ACCESS_KEY  
+AWS_BUCKET_NAME  
+AWS_REGION
 
 ## Usage
 
@@ -60,6 +67,24 @@ Apply infrastructure:
 
 ```bash
 terraform apply
+```
+
+## Retrieving secrets
+
+A Makefile helper is provided to retrieve secrets from AWS Secrets Manager.
+
+Ensure the correct AWS profile is exported before running the commands.
+
+Retrieve secret values:
+
+```bash
+make get-secret
+```
+
+Generate a local .env file automatically:
+
+```bash
+make env
 ```
 
 ## Notes

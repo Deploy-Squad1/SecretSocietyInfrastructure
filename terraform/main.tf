@@ -13,3 +13,7 @@ module "ecr" {
 module "s3" {
   source = "./modules/s3"
 }
+
+module "secrets" {
+  source = "./modules/secrets"
+}

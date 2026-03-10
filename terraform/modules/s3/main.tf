@@ -72,7 +72,16 @@ resource "aws_iam_user_policy" "map_service_s3" {
           "s3:ListBucket"
         ]
         Resource = aws_s3_bucket.media.arn
+      },
+
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Resource = "arn:aws:secretsmanager:eu-north-1:983988120210:secret:secret-society/map-service*"
       }
+
     ]
   })
 }

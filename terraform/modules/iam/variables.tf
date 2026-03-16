@@ -8,3 +8,8 @@ variable "policy_arns" {
   type        = list(string)
   default     = []
 }
+
+variable "media_bucket_arn" {
+  description = "ARN of the media S3 bucket"
+  type        = string
+}

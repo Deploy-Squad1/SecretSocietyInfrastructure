@@ -1,3 +1,9 @@
+locals {
+  policy_arns = {
+    ecr_push = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
+  }
+}
+
 module "ecr" {
   source = "../../modules/ecr"
 
@@ -16,4 +22,16 @@ module "s3" {
 
 module "secrets" {
   source = "../../modules/secrets"
+}
+
+module "iam" {
+  source    = "../../modules/iam"
+  user_name = "github-actions"
+
+  # Attach only the policies this user actually needs
+  policy_arns = [
+    local.policy_arns.ecr_push,
+  ]
+
+  media_bucket_arn = module.s3.media_bucket_arn
 }

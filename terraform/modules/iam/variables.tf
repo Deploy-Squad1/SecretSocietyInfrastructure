@@ -9,7 +9,11 @@ variable "policy_arns" {
   default     = []
 }
 
-variable "media_bucket_arn" {
-  description = "ARN of the media S3 bucket"
-  type        = string
+variable "service_users" {
+  description = "Service IAM users with access to S3 and Secrets Manager"
+  type = map(object({
+    bucket_arn = string
+    secret_arn = string
+  }))
+  default = {}
 }

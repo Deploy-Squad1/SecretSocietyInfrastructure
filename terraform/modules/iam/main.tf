@@ -1,3 +1,6 @@
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
+
 resource "aws_iam_user" "this" {
   name          = var.user_name
   force_destroy = true
@@ -14,17 +17,23 @@ resource "aws_iam_user_policy_attachment" "this" {
   policy_arn = each.value
 }
 
-resource "aws_iam_user" "map_service" {
-  name = "map-service"
+resource "aws_iam_user" "service" {
+  for_each = var.service_users
+
+  name = each.key
 }
 
-resource "aws_iam_access_key" "map_service" {
-  user = aws_iam_user.map_service.name
+resource "aws_iam_access_key" "service" {
+  for_each = var.service_users
+
+  user = aws_iam_user.service[each.key].name
 }
 
-resource "aws_iam_user_policy" "map_service_s3" {
-  name = "map-service-s3-access"
-  user = aws_iam_user.map_service.name
+resource "aws_iam_user_policy" "service_s3" {
+  for_each = var.service_users
+
+  name = "${each.key}-s3-access"
+  user = aws_iam_user.service[each.key].name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -37,21 +46,17 @@ resource "aws_iam_user_policy" "map_service_s3" {
           "s3:DeleteObject",
           "s3:ListBucket"
         ]
-        Resource = "${var.media_bucket_arn}/*"
+        Resource = "${each.value.bucket_arn}/*"
       },
       {
-        Effect = "Allow"
-        Action = [
-          "s3:ListBucket"
-        ]
-        Resource = var.media_bucket_arn
+        Effect   = "Allow"
+        Action   = ["s3:ListBucket"]
+        Resource = each.value.bucket_arn
       },
       {
-        Effect = "Allow"
-        Action = [
-          "secretsmanager:GetSecretValue"
-        ]
-        Resource = "arn:aws:secretsmanager:eu-north-1:983988120210:secret:secret-society/map-service*"
+        Effect   = "Allow"
+        Action   = ["secretsmanager:GetSecretValue"]
+        Resource = each.value.secret_arn
       }
     ]
   })

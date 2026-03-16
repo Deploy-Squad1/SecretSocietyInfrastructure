@@ -25,13 +25,19 @@ module "secrets" {
 }
 
 module "iam" {
-  source    = "../../modules/iam"
-  user_name = "github-actions"
+  source = "../../modules/iam"
 
+  user_name = "github-actions"
   # Attach only the policies this user actually needs
   policy_arns = [
     local.policy_arns.ecr_push,
   ]
 
-  media_bucket_arn = module.s3.media_bucket_arn
+  service_users = {
+    "map-service" = {
+      bucket_arn = module.s3.media_bucket_arn
+      secret_arn = module.secrets.map_service_secret_arn
+    }
+  }
+
 }

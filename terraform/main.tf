@@ -25,13 +25,3 @@ module "s3" {
 module "secrets" {
   source = "./modules/secrets"
 }
-
-module "iam" {
-  source    = "./modules/iam"
-  user_name = "github-actions"
-
-  # Attach only the policies this user actually needs
-  policy_arns = [
-    local.policy_arns.ecr_push,
-  ]
-}

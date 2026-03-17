@@ -1,7 +1,5 @@
 provider "aws" {
   region = "eu-north-1"
 
-  assume_role {
-    role_arn = "arn:aws:iam::485141927994:role/TerraformDeployRole"
-  }
+  allowed_account_ids = ["485141927994"]
 }

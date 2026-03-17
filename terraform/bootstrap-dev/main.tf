@@ -1,9 +1,14 @@
+variable "bucket_name" {}
+variable "project" {
+  default = "secret-society"
+}
+
 resource "aws_s3_bucket" "terraform_state" {
-  bucket = "secret-society-tf-state-deploysquad"
+  bucket = var.bucket_name
 
   tags = {
     Name    = "terraform-state"
-    Project = "secret-society"
+    Project = var.project
   }
 }
 

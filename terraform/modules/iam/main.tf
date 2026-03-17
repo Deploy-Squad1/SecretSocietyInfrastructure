@@ -17,6 +17,7 @@ resource "aws_iam_user_policy_attachment" "this" {
   policy_arn = each.value
 }
 
+# service users:
 resource "aws_iam_user" "service" {
   for_each = var.service_users
 
@@ -43,15 +44,14 @@ resource "aws_iam_user_policy" "service_s3" {
         Action = [
           "s3:PutObject",
           "s3:GetObject",
-          "s3:DeleteObject",
-          "s3:ListBucket"
+          "s3:DeleteObject"
         ]
-        Resource = "${each.value.bucket_arn}/*"
+        Resource = "arn:aws:s3:::${each.value.bucket_name}/*"
       },
       {
         Effect   = "Allow"
         Action   = ["s3:ListBucket"]
-        Resource = each.value.bucket_arn
+        Resource = "arn:aws:s3:::${each.value.bucket_name}"
       },
       {
         Effect   = "Allow"

@@ -18,6 +18,9 @@ module "ecr" {
 
 module "s3" {
   source = "../../modules/s3"
+
+  bucket_name     = "secret-society-media-ds"
+  allowed_origins = ["http://localhost:5173"]
 }
 
 module "secrets" {
@@ -35,8 +38,8 @@ module "iam" {
 
   service_users = {
     "map-service" = {
-      bucket_arn = module.s3.media_bucket_arn
-      secret_arn = module.secrets.map_service_secret_arn
+      bucket_name = "secret-society-media-ds"
+      secret_arn  = module.secrets.map_service_secret_arn
     }
   }
 

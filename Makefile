@@ -1,6 +1,8 @@
 AWS_PROFILE ?= profile
 AWS_REGION ?= eu-north-1
-SECRET_NAME ?= secret-society/map-service
+ENV ?= dev
+
+SECRET_NAME = secret-society/map-service-$(ENV)
 
 get-secret:
 	aws secretsmanager get-secret-value \

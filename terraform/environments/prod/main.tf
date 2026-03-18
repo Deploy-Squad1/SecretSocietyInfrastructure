@@ -25,6 +25,8 @@ module "s3" {
 
 module "secrets" {
   source = "../../modules/secrets"
+
+  environment = "prod"
 }
 
 module "iam" {

@@ -8,3 +8,12 @@ variable "policy_arns" {
   type        = list(string)
   default     = []
 }
+
+variable "service_users" {
+  description = "Service IAM users with access to S3 and Secrets Manager"
+  type = map(object({
+    bucket_name = string
+    secret_arn  = string
+  }))
+  default = {}
+}

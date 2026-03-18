@@ -2,93 +2,86 @@
 
 Terraform configuration for provisioning infrastructure used by the Secret Society project.
 
-Currently managed resources:
+## Architecture
 
-- AWS ECR repositories for project microservices
-- S3 bucket for media storage
-- IAM user for map-service with S3 permissions
-- AWS Secrets Manager for service credentials
-- Terraform remote state stored in S3
+Multi-account setup with isolated environments:
 
-## Repositories created
+- dev
+- stage
+- prod
 
-- core-service
-- frontend-service
-- email-service
-- map-service
-- voting-service
+Each environment:
+
+- uses a separate AWS account
+- has its own remote state (S3)
+- is deployed independently
+
+## Managed resources
+
+- ECR repositories for microservices
+- S3 media bucket (per environment)
+- IAM users and policies (map-service, CI)
+- AWS Secrets Manager
+- Terraform remote state (S3)
 
 ## Prerequisites
 
 - Terraform >= 1.14
-- AWS credentials with required permissions.
-- pre-commit (optional but recommended)
-
-## Map service configuration
-
-The map-service requires AWS credentials and bucket configuration via environment variables.
-
-These credentials correspond to the 'map-service' IAM user created by Terraform.
-
-## Secrets Management
-
-Sensitive credentials are stored in AWS Secrets Manager. Secret currently used by the project:
-
-secret-society/map-service
-
-It contains:
-
-AWS_ACCESS_KEY_ID  
-AWS_SECRET_ACCESS_KEY  
-AWS_BUCKET_NAME  
-AWS_REGION
+- AWS CLI configured
+- access to taget AWS accounts
+- (optional) pre-commit
 
 ## Usage
 
-Export AWS profile before running Terraform:
+Always run Terraform from environment directories:
 
 ```bash
+cd terraform/environments/<env>
 export AWS_PROFILE=<profile>
-```
 
-Initialize Terraform:
-
-```bash
 terraform init
-```
-
-Check the execution plan:
-
-```bash
 terraform plan
-```
-
-Apply infrastructure:
-
-```bash
 terraform apply
 ```
 
-## Retrieving secrets
+## S3 media bucket
+
+Each environment has its own bucket:
+
+- dev: `secret-society-media-ds`
+- stage: `secret-society-media-ds-stage`
+- prod: `secret-society-media-ds-prod`
+
+Used by map-service for file uploads.
+
+## Secrets
+
+Secrets are stored in AWS Secrets Manager and are environment-specific:
+
+`secret-society/map-service-<env>`
+
+- dev: configured (map-service-dev)
+- stage/prod: not iitialized yet
 
 A Makefile helper is provided to retrieve secrets from AWS Secrets Manager.
 
-Ensure the correct AWS profile is exported before running the commands.
-
-Retrieve secret values:
+Retrieve secret values (run from root repo):
 
 ```bash
-make get-secret
+make get-secret ENV=<env> AWS_PROFILE=<profile>
 ```
 
 Generate a local .env file automatically:
 
 ```bash
-make env
+make env ENV=<env> AWS_PROFILE=<profile>
 ```
 
 ## Notes
 
-- AWS CLI credentials must be configured locally.
-- AWS region: eu-north-1 (defined in Terraform provider configuration).
-- S3 media storage bucket is used by map-service to generate presigned URLs for uploads.
+- AWS region: eu-north-1
+- Secrets are not managed by Terraform values (only the secret container is managed)
+- AWS credentials are currently used for development (IAM user)
+- stage/prod access via TerraformDeployRole (configure in ~/.aws/config)
+- Planned improvement: migrate to IAM roles
+  

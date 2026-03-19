@@ -44,5 +44,37 @@ module "iam" {
       secret_arn  = module.secrets.map_service_secret_arn
     }
   }
+}
 
+module "vpc" {
+  source = "../../modules/vpc"
+
+  name = "secret-society-dev"
+  cidr = "10.0.0.0/16"
+}
+
+module "security" {
+  source = "../../modules/security"
+
+  name     = "secret-society-dev"
+  vpc_id   = module.vpc.vpc_id
+  vpc_cidr = module.vpc.cidr
+}
+
+module "rds" {
+  source = "../../modules/rds"
+
+  name               = "secret-society-dev-db"
+  subnet_ids         = module.vpc.private_subnet_ids
+  security_group_ids = [module.security.rds_sg_id]
+
+  db_name  = "secret_society"
+  username = "app_user"
+
+  instance_class = "db.t3.micro"
+
+  skip_final_snapshot = false
+  deletion_protection = false
+
+  backup_retention_period = 1
 }

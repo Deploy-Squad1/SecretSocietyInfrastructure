@@ -1,7 +1,9 @@
 variable "name" {
-  type = string
+  description = "Base name used for VPC and its resources"
+  type        = string
 }
 
 variable "cidr" {
-  type = string
+  description = "CIDR block for the VPC"
+  type        = string
 }

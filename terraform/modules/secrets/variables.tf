@@ -1,3 +1,4 @@
 variable "environment" {
-  type = string
+  description = "Deplyment environment"
+  type        = string
 }

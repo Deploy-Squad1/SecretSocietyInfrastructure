@@ -78,3 +78,18 @@ module "rds" {
 
   backup_retention_period = 1
 }
+
+module "vpc" {
+  source = "../../modules/vpc"
+  env    = "dev"
+}
+
+module "ec2" {
+  source = "../../modules/ec2"
+
+  env           = "dev"
+  ami_id        = "ami-080254318c2d8932f"
+  instance_type  = "t3.small"
+  subnet_id      = module.vpc.public_subnet_id
+  vpc_id        = module.vpc.vpc_id
+}

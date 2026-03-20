@@ -79,11 +79,6 @@ module "rds" {
   backup_retention_period = 1
 }
 
-module "vpc" {
-  source = "../../modules/vpc"
-  env    = "dev"
-}
-
 module "ec2" {
   source = "../../modules/ec2"
 

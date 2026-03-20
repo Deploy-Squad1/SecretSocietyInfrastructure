@@ -8,9 +8,13 @@ resource "aws_db_subnet_group" "subnet_group" {
 }
 
 resource "aws_db_instance" "rds" {
-  identifier        = var.name
-  engine            = "postgres"
-  engine_version    = "15"
+  identifier     = var.name
+  engine         = "postgres"
+  engine_version = "18.3"
+
+  allow_major_version_upgrade = true
+  apply_immediately           = true
+
   instance_class    = var.instance_class
   allocated_storage = var.allocated_storage
   db_name           = var.db_name

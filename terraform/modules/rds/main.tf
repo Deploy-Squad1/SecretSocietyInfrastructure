@@ -1,4 +1,4 @@
-resource "aws_db_subnet_group" "this" {
+resource "aws_db_subnet_group" "subnet_group" {
   name       = "${var.name}-subnet-group"
   subnet_ids = var.subnet_ids
 
@@ -7,7 +7,7 @@ resource "aws_db_subnet_group" "this" {
   }
 }
 
-resource "aws_db_instance" "this" {
+resource "aws_db_instance" "rds" {
   identifier        = var.name
   engine            = "postgres"
   engine_version    = "15"
@@ -20,7 +20,7 @@ resource "aws_db_instance" "this" {
   # AWS manages password in Secret Manager
   manage_master_user_password = true
 
-  db_subnet_group_name   = aws_db_subnet_group.this.name
+  db_subnet_group_name   = aws_db_subnet_group.subnet_group.name
   vpc_security_group_ids = var.security_group_ids
 
   publicly_accessible = false

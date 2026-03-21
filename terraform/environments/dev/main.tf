@@ -78,3 +78,22 @@ module "rds" {
 
   backup_retention_period = 1
 }
+
+data "aws_ami" "ubuntu" {
+    most_recent = true
+    owners = ["099720109477"]
+    filter{
+        name = "name"
+        values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-noble-24.04-amd64-server-*"]
+    }
+}
+
+module "ec2" {
+  source = "../../modules/ec2"
+
+  env               = "dev"
+  ami_id            = data.aws_ami.ubuntu.id
+  instance_type     = "t3.small"
+  subnet_id         = module.vpc.public_subnet_ids[0] 
+  security_group_id = module.security.jenkins_sg_id   
+}

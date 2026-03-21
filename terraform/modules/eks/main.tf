@@ -5,6 +5,9 @@ module "eks" {
   name               = var.name
   kubernetes_version = var.kubernetes_version
 
+  create_kms_key    = false
+  encryption_config = null
+
   addons = {
     coredns = {}
     eks-pod-identity-agent = {

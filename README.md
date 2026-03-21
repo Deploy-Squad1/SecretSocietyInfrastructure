@@ -18,11 +18,12 @@ Each environment:
 
 ## Managed resources
 
-- ECR repositories for microservices
-- S3 media bucket (per environment)
-- IAM users and policies (map-service, CI)
-- AWS Secrets Manager
-- Terraform remote state (S3)
+- networking: VPC, subnets, internet gateway, route tables, security groups, VPC endpoints
+- compute: EKS cluster, managed node group
+- data: RDS PostgreSQL, S3 media bucket
+- containers: ECR repositories
+- access and secrets: IAM users/policies, AWS Secrets Manager
+- state: Terraform remote state (S3)
 
 ## Prerequisites
 

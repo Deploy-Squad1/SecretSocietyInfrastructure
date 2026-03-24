@@ -99,6 +99,16 @@ module "ec2" {
   security_group_id = module.security.jenkins_sg_id
 }
 
+module "admin_host" {
+  source = "../../modules/admin_host"
+
+  env               = "dev"
+  ami_id            = data.aws_ami.ubuntu.id
+  instance_type     = "t3.micro"
+  subnet_id         = module.vpc.private_subnet_ids[0]
+  security_group_id = module.security.admin_host_sg_id
+}
+
 module "eks" {
   source = "../../modules/eks"
 
@@ -128,4 +138,14 @@ resource "aws_security_group_rule" "eks_to_rds" {
   protocol                 = "tcp"
   security_group_id        = module.security.rds_sg_id
   source_security_group_id = module.eks.node_security_group_id
+}
+
+resource "aws_security_group_rule" "admin_host_to_eks_api" {
+  description              = "Allow admin host to access EKS API"
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = module.eks.cluster_security_group_id
+  source_security_group_id = module.security.admin_host_sg_id
 }

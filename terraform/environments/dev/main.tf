@@ -44,6 +44,23 @@ module "iam" {
       secret_arn  = module.secrets.map_service_secret_arn
     }
   }
+
+  admin_host_instance_arn = module.admin_host.instance_arn
+
+  eks_admin_principals = {
+    daria = {
+      trusted_principal_arn = "arn:aws:iam::983988120210:user/Daria"
+    }
+    marian = {
+      trusted_principal_arn = "arn:aws:iam::983988120210:user/Marian"
+    }
+    veronikas = {
+      trusted_principal_arn = "arn:aws:iam::983988120210:user/VeronikaS"
+    }
+    vladyslav = {
+      trusted_principal_arn = "arn:aws:iam::983988120210:user/Vladyslav"
+    }
+  }
 }
 
 module "vpc" {
@@ -105,7 +122,7 @@ module "admin_host" {
   env               = "dev"
   ami_id            = data.aws_ami.ubuntu.id
   instance_type     = "t3.micro"
-  subnet_id         = module.vpc.private_subnet_ids[0]
+  subnet_id         = module.vpc.public_subnet_ids[0]
   security_group_id = module.security.admin_host_sg_id
 }
 
@@ -126,6 +143,71 @@ module "eks" {
   access_entries = {
     jenkins_admin = {
       principal_arn = "arn:aws:iam::983988120210:role/jenkins-ssm-role-dev"
+
+      policy_associations = {
+        admin = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = {
+            type = "cluster"
+          }
+        }
+      }
+    }
+
+    admin_host = {
+      principal_arn = "arn:aws:iam::983988120210:role/admin-ssm-role-dev"
+
+      policy_associations = {
+        admin = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = {
+            type = "cluster"
+          }
+        }
+      }
+    }
+
+    daria_admin = {
+      principal_arn = module.iam.eks_admin_role_arns["daria"]
+
+      policy_associations = {
+        admin = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = {
+            type = "cluster"
+          }
+        }
+      }
+    }
+
+    marian_admin = {
+      principal_arn = module.iam.eks_admin_role_arns["marian"]
+
+      policy_associations = {
+        admin = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = {
+            type = "cluster"
+          }
+        }
+      }
+    }
+
+    veronikas_admin = {
+      principal_arn = module.iam.eks_admin_role_arns["veronikas"]
+
+      policy_associations = {
+        admin = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = {
+            type = "cluster"
+          }
+        }
+      }
+    }
+
+    vladyslav_admin = {
+      principal_arn = module.iam.eks_admin_role_arns["vladyslav"]
 
       policy_associations = {
         admin = {

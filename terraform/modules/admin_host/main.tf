@@ -1,3 +1,6 @@
+data "aws_region" "current" {}
+data "aws_caller_identity" "current" {}
+
 resource "aws_iam_role" "admin_ssm_role" {
   name = "admin-ssm-role-${var.env}"
 

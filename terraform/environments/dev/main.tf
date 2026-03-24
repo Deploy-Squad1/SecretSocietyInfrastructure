@@ -118,12 +118,25 @@ module "eks" {
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnet_ids
 
-  node_instance_types = ["t3.medium"]
+  node_instance_types = ["t3.small"]
   node_min_size       = 1
   node_max_size       = 3
-  node_desired_size   = 2
+  node_desired_size   = 1
 
-  access_entries = {}
+  access_entries = {
+    jenkins_admin = {
+      principal_arn = "arn:aws:iam::983988120210:role/jenkins-ssm-role-dev"
+
+      policy_associations = {
+        admin = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = {
+            type = "cluster"
+          }
+        }
+      }
+    }
+  }
 
   tags = {
     environment = "dev"
@@ -148,4 +161,14 @@ resource "aws_security_group_rule" "admin_host_to_eks_api" {
   protocol                 = "tcp"
   security_group_id        = module.eks.cluster_security_group_id
   source_security_group_id = module.security.admin_host_sg_id
+}
+
+resource "aws_security_group_rule" "jenkins_to_eks_api" {
+  description              = "Allow Jenkins EC2 to access EKS API"
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = module.eks.cluster_security_group_id
+  source_security_group_id = module.security.jenkins_sg_id
 }

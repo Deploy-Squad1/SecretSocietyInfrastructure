@@ -43,6 +43,7 @@ export AWS_PROFILE=<profile>
 terraform init
 terraform plan
 terraform apply
+terraform output
 ```
 
 ## S3 media bucket
@@ -84,5 +85,7 @@ make env ENV=<env> AWS_PROFILE=<profile>
 - Secrets are not managed by Terraform values (only the secret container is managed)
 - AWS credentials are currently used for development (IAM user)
 - stage/prod access via TerraformDeployRole (configure in ~/.aws/config)
-- Planned improvement: migrate to IAM roles
+- Planned improvement: congifure EKS Pod Identity agent instead of IAM user
+  
+To reduce AWS costs, destroy the dev environment when it's not needed for a period of time (e.g. overnight/weekends).
   

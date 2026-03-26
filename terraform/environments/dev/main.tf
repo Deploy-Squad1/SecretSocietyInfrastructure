@@ -4,6 +4,9 @@ locals {
   }
 }
 
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
+
 module "ecr" {
   source = "../../modules/ecr"
 
@@ -27,40 +30,6 @@ module "secrets" {
   source = "../../modules/secrets"
 
   environment = "dev"
-}
-
-module "iam" {
-  source = "../../modules/iam"
-
-  user_name = "github-actions"
-  # Attach only the policies this user actually needs
-  policy_arns = [
-    local.policy_arns.ecr_push,
-  ]
-
-  service_users = {
-    "map-service" = {
-      bucket_name = "secret-society-media-ds"
-      secret_arn  = module.secrets.map_service_secret_arn
-    }
-  }
-
-  admin_host_instance_arn = module.admin_host.instance_arn
-
-  eks_admin_principals = {
-    daria = {
-      trusted_principal_arn = "arn:aws:iam::983988120210:user/Daria"
-    }
-    marian = {
-      trusted_principal_arn = "arn:aws:iam::983988120210:user/Marian"
-    }
-    veronikas = {
-      trusted_principal_arn = "arn:aws:iam::983988120210:user/VeronikaS"
-    }
-    vladyslav = {
-      trusted_principal_arn = "arn:aws:iam::983988120210:user/Vladyslav"
-    }
-  }
 }
 
 module "vpc" {
@@ -116,16 +85,6 @@ module "ec2" {
   security_group_id = module.security.jenkins_sg_id
 }
 
-module "admin_host" {
-  source = "../../modules/admin_host"
-
-  env               = "dev"
-  ami_id            = data.aws_ami.ubuntu.id
-  instance_type     = "t3.micro"
-  subnet_id         = module.vpc.public_subnet_ids[0]
-  security_group_id = module.security.admin_host_sg_id
-}
-
 module "eks" {
   source = "../../modules/eks"
 
@@ -141,11 +100,11 @@ module "eks" {
   node_desired_size   = 1
 
   access_entries = {
-    jenkins_admin = {
-      principal_arn = "arn:aws:iam::983988120210:role/jenkins-ssm-role-dev"
+    team = {
+      principal_arn = module.iam.eks_admin_role_arn
 
       policy_associations = {
-        admin = {
+        cluster_admin = {
           policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
           access_scope = {
             type = "cluster"
@@ -155,10 +114,10 @@ module "eks" {
     }
 
     admin_host = {
-      principal_arn = "arn:aws:iam::983988120210:role/admin-ssm-role-dev"
+      principal_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/admin-ssm-role-dev"
 
       policy_associations = {
-        admin = {
+        cluster_admin = {
           policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
           access_scope = {
             type = "cluster"
@@ -167,50 +126,11 @@ module "eks" {
       }
     }
 
-    daria_admin = {
-      principal_arn = module.iam.eks_admin_role_arns["daria"]
+    ci = {
+      principal_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/jenkins-ssm-role-dev"
 
       policy_associations = {
-        admin = {
-          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-          access_scope = {
-            type = "cluster"
-          }
-        }
-      }
-    }
-
-    marian_admin = {
-      principal_arn = module.iam.eks_admin_role_arns["marian"]
-
-      policy_associations = {
-        admin = {
-          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-          access_scope = {
-            type = "cluster"
-          }
-        }
-      }
-    }
-
-    veronikas_admin = {
-      principal_arn = module.iam.eks_admin_role_arns["veronikas"]
-
-      policy_associations = {
-        admin = {
-          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-          access_scope = {
-            type = "cluster"
-          }
-        }
-      }
-    }
-
-    vladyslav_admin = {
-      principal_arn = module.iam.eks_admin_role_arns["vladyslav"]
-
-      policy_associations = {
-        admin = {
+        cluster_admin = {
           policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
           access_scope = {
             type = "cluster"
@@ -223,6 +143,40 @@ module "eks" {
   tags = {
     environment = "dev"
   }
+}
+
+module "admin_host" {
+  source = "../../modules/admin_host"
+
+  env               = "dev"
+  ami_id            = data.aws_ami.ubuntu.id
+  instance_type     = "t3.micro"
+  subnet_id         = module.vpc.public_subnet_ids[0]
+  security_group_id = module.security.admin_host_sg_id
+
+  terraform_state_bucket_arn = "arn:aws:s3:::secret-society-tf-state-deploysquad"
+  eks_cluster_arn            = module.eks.cluster_arn
+}
+
+module "iam" {
+  source = "../../modules/iam"
+
+  env = "dev"
+
+  user_name = "github-actions"
+  # Attach only the policies this user actually needs
+  policy_arns = [local.policy_arns.ecr_push]
+
+  service_users = {
+    "map-service" = {
+      bucket_name = "secret-society-media-ds"
+      secret_arn  = module.secrets.map_service_secret_arn
+    }
+  }
+
+  admin_host_instance_arn = module.admin_host.instance_arn
+  eks_cluster_arn         = module.eks.cluster_arn
+  team_user_arns          = var.team_user_arns
 }
 
 resource "aws_security_group_rule" "eks_to_rds" {

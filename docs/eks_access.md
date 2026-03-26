@@ -1,58 +1,63 @@
 # EKS Access (dev)
 
-## 1) AWS profile
+The cluster is private (no public endpoint). Access is done via IAM roles + SSM.
+
+## 1.  AWS profile
 
 Add to ~/.aws/config:
 
-[profile dev-eks-<your-name>]
-role_arn = arn:aws:iam::983988120210:role/dev-eks-admin-<your-name>
-source_profile = <your-source-profile>
+[profile team]\
+role_arn = arn:aws:iam::ACCOUNT_ID:role/team-access-dev\
+source_profile = YOUR_SOURCE_PROFILE\
 region = eu-north-1
 
-* <your-source-profile> - your AWS profile with access to the dev account (e.g. iac, default, etc)
+[profile eks-admin]\
+role_arn = arn:aws:iam::ACCOUNT_ID:role/eks-admin-dev\
+source_profile = team\
+region = eu-north-1
 
-Test:
-AWS_PROFILE=dev-eks-<your-name> aws sts get-caller-identity
+- ACCOUNT_ID - refers to the AWS accout ID (dev)
+- YOUR_SOURCE_PROFILE - refers to your AWS profile with access to the dev account (e.g. iac, default, etc)
 
----
+Verify:\
+aws sts get-caller-identity --profile eks-admin
 
-## 2) Start tunnel
+## 2. Access via admin host
 
-./eks-tunnel.sh
+Set profile:
 
-(keep this terminal open, use another one for commands)
+export AWS_PROFILE=eks-admin
 
----
+Start SSM session:
 
-## 3) kubeconfig (first time)
+aws ssm start-session --target <admin_host_instance_id>
 
-AWS_PROFILE=dev-eks-<your-name> aws eks update-kubeconfig \
+Inside EC2:
+
+```bash
+aws eks update-kubeconfig \
   --name secret-society-dev \
-  --region eu-north-1 \
-  --kubeconfig ~/.kube/dev-tunnel
+  --region eu-north-1
 
-Edit ~/.kube/dev-tunnel:
+kubectl get nodes
+```
 
-- server: https://127.0.0.1:9443
-- insecure-skip-tls-verify: true
-- remove certificate-authority-data
+## 3. Optional: access via SSM tunel
 
----
+Start port-forwarding:
 
-## 4) kubectl
+```bash
+aws ssm start-session \
+  --target <admin_host_instance_id> \
+  --document-name AWS-StartPortForwardingSessionToRemoteHost \
+  --parameters '{"host":["<EKS_ENDPOINT>"],"portNumber":["443"],"localPortNumber":["8443"]}'
+```
 
-KUBECONFIG=~/.kube/dev-tunnel kubectl get ns
+Then configure kubeconfig to use:
 
-Optional:
-alias kdev='KUBECONFIG=~/.kube/dev-tunnel kubectl'
-
-With the alias, you can use kubectl by running:
-kdev get ns
-kdev get pods
-
----
+https://localhost:8443
 
 ## Notes
-- tunnel must stay open
-- dev only (TLS disabled)
-- IAM roles used for access
+
+- Access works only from inside VPC (via SSM)
+- If access fails, check your AWS profile (eks-admin)

@@ -9,9 +9,7 @@ output "secret_access_key" {
   sensitive   = true
 }
 
-output "eks_admin_role_arns" {
-  description = "Map of dedicated EKS admin role ARNs"
-  value = {
-    for key, role in aws_iam_role.eks_admin : key => role.arn
-  }
+output "eks_admin_role_arn" {
+  description = "ARN of the EKS admin role"
+  value       = aws_iam_role.eks_admin.arn
 }

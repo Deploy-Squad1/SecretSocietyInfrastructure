@@ -23,3 +23,13 @@ variable "security_group_id" {
   description = "Security Group ID for the EC2 instance"
   type        = string
 }
+
+variable "eks_cluster_arn" {
+  description = "ARN of the EKS cluster"
+  type        = string
+}
+
+variable "terraform_state_bucket_arn" {
+  description = "ARN of the State bucket"
+  type        = string
+}

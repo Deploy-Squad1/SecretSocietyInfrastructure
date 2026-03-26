@@ -24,8 +24,7 @@ resource "aws_iam_role_policy_attachment" "ssm_attach" {
 }
 
 resource "aws_iam_policy" "eks_access" {
-  name        = "admin-eks-access-${var.env}"
-  description = "Allow admin EC2 to access EKS clusters"
+  name = "admin-eks-access-${var.env}"
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -36,7 +35,7 @@ resource "aws_iam_policy" "eks_access" {
           "eks:DescribeCluster",
           "eks:ListClusters"
         ]
-        Resource = "*"
+        Resource = var.eks_cluster_arn
       }
     ]
   })
@@ -45,6 +44,35 @@ resource "aws_iam_policy" "eks_access" {
 resource "aws_iam_role_policy_attachment" "eks_access_attach" {
   role       = aws_iam_role.admin_ssm_role.name
   policy_arn = aws_iam_policy.eks_access.arn
+}
+
+resource "aws_iam_policy" "terraform_state_s3_access" {
+  name = "admin-s3-terraform-state-${var.env}"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["s3:ListBucket"]
+        Resource = var.terraform_state_bucket_arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject"
+        ]
+        Resource = "${var.terraform_state_bucket_arn}/*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "admin_s3_access_attach" {
+  role       = aws_iam_role.admin_ssm_role.name
+  policy_arn = aws_iam_policy.terraform_state_s3_access.arn
 }
 
 resource "aws_iam_instance_profile" "admin_ssm_profile" {

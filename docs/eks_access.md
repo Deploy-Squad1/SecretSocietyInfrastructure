@@ -4,33 +4,36 @@ The cluster is private (no public endpoint). Access is done via IAM roles + SSM.
 
 ## 1.  AWS profile
 
-Add to ~/.aws/config:
+Add to `~/.aws/config`:
 
-[profile team]\
-role_arn = arn:aws:iam::ACCOUNT_ID:role/team-access-dev\
-source_profile = YOUR_SOURCE_PROFILE\
+```bash
+[profile team]
+role_arn = arn:aws:iam::ACCOUNT_ID:role/team-access-dev
+source_profile = YOUR_SOURCE_PROFILE
 region = eu-north-1
 
-[profile eks-admin]\
-role_arn = arn:aws:iam::ACCOUNT_ID:role/eks-admin-dev\
-source_profile = team\
+[profile eks-admin]
+role_arn = arn:aws:iam::ACCOUNT_ID:role/eks-admin-dev
+source_profile = team
 region = eu-north-1
+```
 
 - ACCOUNT_ID - refers to the AWS accout ID (dev)
 - YOUR_SOURCE_PROFILE - refers to your AWS profile with access to the dev account (e.g. iac, default, etc)
 
-Verify:\
-aws sts get-caller-identity --profile eks-admin
+Verify:
+
+`aws sts get-caller-identity --profile eks-admin`
 
 ## 2. Access via admin host
 
 Set profile:
 
-export AWS_PROFILE=eks-admin
+`export AWS_PROFILE=eks-admin`
 
 Start SSM session:
 
-aws ssm start-session --target <admin_host_instance_id>
+`aws ssm start-session --target <admin_host_instance_id>`
 
 Inside EC2:
 

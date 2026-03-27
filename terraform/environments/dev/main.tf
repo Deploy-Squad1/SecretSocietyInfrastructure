@@ -150,7 +150,7 @@ module "admin_host" {
 
   env               = "dev"
   ami_id            = data.aws_ami.ubuntu.id
-  instance_type     = "t3.micro"
+  instance_type     = "t2.micro"
   subnet_id         = module.vpc.public_subnet_ids[0]
   security_group_id = module.security.admin_host_sg_id
 

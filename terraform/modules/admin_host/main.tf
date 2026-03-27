@@ -87,6 +87,13 @@ resource "aws_instance" "admin_host" {
   vpc_security_group_ids = [var.security_group_id]
   iam_instance_profile   = aws_iam_instance_profile.admin_ssm_profile.name
 
+  user_data = <<-EOF
+#!/bin/bash
+snap install amazon-ssm-agent --classic
+systemctl enable snap.amazon-ssm-agent.amazon-ssm-agent.service
+systemctl start snap.amazon-ssm-agent.amazon-ssm-agent.service
+EOF
+
   lifecycle {
     ignore_changes = [ami]
   }

@@ -199,3 +199,42 @@ resource "aws_vpc_endpoint" "sts" {
     Name = "${var.name}-sts-endpoint"
   }
 }
+# interface endpoints for SSM
+resource "aws_vpc_endpoint" "ssm" {
+  vpc_id              = aws_vpc.vpc.id
+  service_name        = "com.amazonaws.${var.aws_region}.ssm"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = values(aws_subnet.private)[*].id
+  private_dns_enabled = true
+  security_group_ids  = [aws_security_group.vpce.id]
+
+  tags = {
+    Name = "${var.name}-ssm-endpoint"
+  }
+}
+
+resource "aws_vpc_endpoint" "ssmmessages" {
+  vpc_id              = aws_vpc.vpc.id
+  service_name        = "com.amazonaws.${var.aws_region}.ssmmessages"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = values(aws_subnet.private)[*].id
+  private_dns_enabled = true
+  security_group_ids  = [aws_security_group.vpce.id]
+
+  tags = {
+    Name = "${var.name}-ssmmessages-endpoint"
+  }
+}
+
+resource "aws_vpc_endpoint" "ec2messages" {
+  vpc_id              = aws_vpc.vpc.id
+  service_name        = "com.amazonaws.${var.aws_region}.ec2messages"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = values(aws_subnet.private)[*].id
+  private_dns_enabled = true
+  security_group_ids  = [aws_security_group.vpce.id]
+
+  tags = {
+    Name = "${var.name}-ec2messages-endpoint"
+  }
+}

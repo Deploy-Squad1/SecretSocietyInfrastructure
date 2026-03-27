@@ -31,6 +31,9 @@ module "eks" {
       min_size     = var.node_min_size
       max_size     = var.node_max_size
       desired_size = var.node_desired_size
+
+      release_version                = "1.35.2-20260317"
+      use_latest_ami_release_version = false
     }
   }
 

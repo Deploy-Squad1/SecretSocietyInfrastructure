@@ -1,6 +1,7 @@
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
+# CI user (for GitHub Actions)
 resource "aws_iam_user" "this" {
   name          = var.user_name
   force_destroy = true
@@ -17,7 +18,7 @@ resource "aws_iam_user_policy_attachment" "this" {
   policy_arn = each.value
 }
 
-# service users:
+# service users
 resource "aws_iam_user" "service" {
   for_each = var.service_users
 
@@ -61,3 +62,110 @@ resource "aws_iam_user_policy" "service_s3" {
     ]
   })
 }
+
+# team role
+resource "aws_iam_role" "team_access" {
+  name = "team-access-${var.env}"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          AWS = tolist(var.team_user_arns)
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+}
+
+# EKS role
+resource "aws_iam_role" "eks_admin" {
+  name = "eks-admin-${var.env}"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          AWS = aws_iam_role.team_access.arn
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+}
+
+# allow team -> admin
+resource "aws_iam_policy" "team_assume_eks_admin" {
+  name = "team-assume-eks-admin-${var.env}"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "sts:AssumeRole"
+        Resource = aws_iam_role.eks_admin.arn
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "team_assume_attach" {
+  role       = aws_iam_role.team_access.name
+  policy_arn = aws_iam_policy.team_assume_eks_admin.arn
+}
+
+resource "aws_iam_policy" "eks_admin_access" {
+  name = "eks-admin-access-${var.env}"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["eks:DescribeCluster"]
+        Resource = var.eks_cluster_arn
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "eks_admin_access_attach" {
+  role       = aws_iam_role.eks_admin.name
+  policy_arn = aws_iam_policy.eks_admin_access.arn
+}
+
+# SSM access to admin host
+resource "aws_iam_policy" "eks_admin_ssm_access" {
+  name = "eks-admin-ssm-${var.env}"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:StartSession",
+          "ssm:ResumeSession",
+          "ssm:TerminateSession"
+        ]
+        Resource = [
+          var.admin_host_instance_arn,
+          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:document/AWS-StartPortForwardingSessionToRemoteHost",
+          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:document/SSM-SessionManagerRunShell"
+        ]
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "eks_admin_ssm_attach" {
+  role       = aws_iam_role.eks_admin.name
+  policy_arn = aws_iam_policy.eks_admin_ssm_access.arn
+}
+  

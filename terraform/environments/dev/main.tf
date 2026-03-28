@@ -15,7 +15,8 @@ module "ecr" {
     "frontend-service",
     "email-service",
     "map-service",
-    "voting-service"
+    "voting-service",
+    "nginx-gateway-fabric"
   ]
 }
 
@@ -179,6 +180,17 @@ module "iam" {
   team_user_arns          = var.team_user_arns
 }
 
+module "gateway" {
+  source = "../../modules/gateway"
+
+  cluster_name     = module.eks.cluster_name
+  cluster_endpoint = module.eks.cluster_endpoint
+  cluster_ca       = module.eks.cluster_certificate_authority_data
+
+  image_repository = module.ecr.repository_urls["nginx-gateway-fabric"]
+  image_tag        = "edge"
+}
+
 resource "aws_security_group_rule" "eks_to_rds" {
   description              = "Allow PostgreSQL access from EKS nodes"
   type                     = "ingress"
@@ -207,4 +219,16 @@ resource "aws_security_group_rule" "jenkins_to_eks_api" {
   protocol                 = "tcp"
   security_group_id        = module.eks.cluster_security_group_id
   source_security_group_id = module.security.jenkins_sg_id
+}
+
+resource "aws_security_group_rule" "lb_to_nodes_https" {
+  description       = "Allow LoadBalancer to reach EKS nodes on 443"
+  type              = "ingress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  security_group_id = module.eks.node_security_group_id
+
+  # temporary (later replace to source_security_group_id = <lb_sg_id>)
+  cidr_blocks = ["0.0.0.0/0"]
 }

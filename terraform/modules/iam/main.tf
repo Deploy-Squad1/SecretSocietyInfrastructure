@@ -140,6 +140,48 @@ resource "aws_iam_role_policy_attachment" "eks_admin_access_attach" {
   policy_arn = aws_iam_policy.eks_admin_access.arn
 }
 
+resource "aws_iam_role_policy_attachment" "eks_admin_readonly_attach" {
+  role       = aws_iam_role.eks_admin.name
+  policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "eks_admin_ecr" {
+  role       = aws_iam_role.eks_admin.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
+}
+
+# S3 access for Terraform state
+resource "aws_iam_policy" "eks_admin_s3_state_access" {
+  name = "eks-admin-s3-state-${var.env}"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:ListBucket"
+        ]
+        Resource = "arn:aws:s3:::secret-society-tf-state-deploysquad"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject"
+        ]
+        Resource = "arn:aws:s3:::secret-society-tf-state-deploysquad/*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "eks_admin_s3_state_attach" {
+  role       = aws_iam_role.eks_admin.name
+  policy_arn = aws_iam_policy.eks_admin_s3_state_access.arn
+}
+
 # SSM access to admin host
 resource "aws_iam_policy" "eks_admin_ssm_access" {
   name = "eks-admin-ssm-${var.env}"
@@ -156,9 +198,26 @@ resource "aws_iam_policy" "eks_admin_ssm_access" {
         ]
         Resource = [
           var.admin_host_instance_arn,
-          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:document/AWS-StartPortForwardingSessionToRemoteHost",
-          "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:document/SSM-SessionManagerRunShell"
+          "arn:aws:ssm:${data.aws_region.current.region}::document/AWS-StartPortForwardingSessionToRemoteHost",
+          "arn:aws:ssm:${data.aws_region.current.region}::document/SSM-SessionManagerRunShell"
         ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ssmmessages:CreateControlChannel",
+          "ssmmessages:CreateDataChannel",
+          "ssmmessages:OpenControlChannel",
+          "ssmmessages:OpenDataChannel"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:DescribeInstanceInformation"
+        ]
+        Resource = "*"
       }
     ]
   })

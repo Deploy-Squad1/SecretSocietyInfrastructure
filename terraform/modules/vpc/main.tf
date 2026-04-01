@@ -1,3 +1,4 @@
+# VPC (base network)
 resource "aws_vpc" "vpc" {
   cidr_block           = var.cidr
   enable_dns_support   = true
@@ -8,6 +9,7 @@ resource "aws_vpc" "vpc" {
   }
 }
 
+# AZs with subnet definitions
 data "aws_availability_zones" "available" {}
 
 locals {
@@ -33,7 +35,7 @@ locals {
   }
 }
 
-# private subnets (for RDS + EKS)
+# Private subnets (for RDS + EKS)
 resource "aws_subnet" "private" {
   for_each = local.private_subnets
 
@@ -46,7 +48,7 @@ resource "aws_subnet" "private" {
   }
 }
 
-# public subnets for internet-facing resources
+# Public subnets (NAT, ALB, EC2)
 resource "aws_subnet" "public" {
   for_each = local.public_subnets
 
@@ -60,6 +62,7 @@ resource "aws_subnet" "public" {
   }
 }
 
+# Internet Gateway (public internet access)
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.vpc.id
 
@@ -68,7 +71,7 @@ resource "aws_internet_gateway" "igw" {
   }
 }
 
-# route table for public subnets
+# Public route table (IGW route)
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.vpc.id
 
@@ -82,6 +85,7 @@ resource "aws_route_table" "public" {
   }
 }
 
+# Associate public subnets with public RT
 resource "aws_route_table_association" "public" {
   for_each = aws_subnet.public
 
@@ -89,7 +93,28 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public.id
 }
 
-# private route table for private subnets
+# Elastic IP for NAT Gateway
+resource "aws_eip" "nat" {
+  domain = "vpc"
+
+  tags = {
+    Name = "${var.name}-nat-eip"
+  }
+}
+
+# NAT Gateway
+resource "aws_nat_gateway" "nat" {
+  allocation_id = aws_eip.nat.id
+  subnet_id     = aws_subnet.public["public-a"].id
+
+  tags = {
+    Name = "${var.name}-nat"
+  }
+
+  depends_on = [aws_internet_gateway.igw]
+}
+
+# Private route table (uses NAT for internet)
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.vpc.id
 
@@ -98,143 +123,17 @@ resource "aws_route_table" "private" {
   }
 }
 
+# Route private traffic to NAT Gateway
+resource "aws_route" "private_nat" {
+  route_table_id         = aws_route_table.private.id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = aws_nat_gateway.nat.id
+}
+
+# Associate private subnets with private RT
 resource "aws_route_table_association" "private" {
   for_each = aws_subnet.private
 
   subnet_id      = each.value.id
   route_table_id = aws_route_table.private.id
-}
-
-# security group for interface VPC endpoints
-resource "aws_security_group" "vpce" {
-  name        = "${var.name}-vpce-sg"
-  description = "Security group for interface VPC endpoints"
-  vpc_id      = aws_vpc.vpc.id
-
-  ingress {
-    description = "Allow HTTPS from within VPC"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = [aws_vpc.vpc.cidr_block]
-  }
-
-  egress {
-    description = "Allow all outbound"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "${var.name}-vpce-sg"
-  }
-}
-
-# gateway endpoint for S3
-resource "aws_vpc_endpoint" "s3" {
-  vpc_id            = aws_vpc.vpc.id
-  service_name      = "com.amazonaws.${var.aws_region}.s3"
-  vpc_endpoint_type = "Gateway"
-  route_table_ids   = [aws_route_table.private.id]
-
-  tags = {
-    Name = "${var.name}-s3-endpoint"
-  }
-}
-
-# interface endpoint for ECR API
-resource "aws_vpc_endpoint" "ecr_api" {
-  vpc_id              = aws_vpc.vpc.id
-  service_name        = "com.amazonaws.${var.aws_region}.ecr.api"
-  vpc_endpoint_type   = "Interface"
-  subnet_ids          = values(aws_subnet.private)[*].id
-  private_dns_enabled = true
-  security_group_ids  = [aws_security_group.vpce.id]
-
-  tags = {
-    Name = "${var.name}-ecr-api-endpoint"
-  }
-}
-
-# interface endpoint for ECR Docker registry
-resource "aws_vpc_endpoint" "ecr_dkr" {
-  vpc_id              = aws_vpc.vpc.id
-  service_name        = "com.amazonaws.${var.aws_region}.ecr.dkr"
-  vpc_endpoint_type   = "Interface"
-  subnet_ids          = values(aws_subnet.private)[*].id
-  private_dns_enabled = true
-  security_group_ids  = [aws_security_group.vpce.id]
-
-  tags = {
-    Name = "${var.name}-ecr-dkr-endpoint"
-  }
-}
-
-# internet endpoint for EC2 API
-resource "aws_vpc_endpoint" "ec2" {
-  vpc_id              = aws_vpc.vpc.id
-  service_name        = "com.amazonaws.${var.aws_region}.ec2"
-  vpc_endpoint_type   = "Interface"
-  subnet_ids          = values(aws_subnet.private)[*].id
-  private_dns_enabled = true
-  security_group_ids  = [aws_security_group.vpce.id]
-
-  tags = {
-    Name = "${var.name}-ec2-endpoint"
-  }
-}
-
-# interface endpoint for STS
-resource "aws_vpc_endpoint" "sts" {
-  vpc_id              = aws_vpc.vpc.id
-  service_name        = "com.amazonaws.${var.aws_region}.sts"
-  vpc_endpoint_type   = "Interface"
-  subnet_ids          = values(aws_subnet.private)[*].id
-  private_dns_enabled = true
-  security_group_ids  = [aws_security_group.vpce.id]
-
-  tags = {
-    Name = "${var.name}-sts-endpoint"
-  }
-}
-# interface endpoints for SSM
-resource "aws_vpc_endpoint" "ssm" {
-  vpc_id              = aws_vpc.vpc.id
-  service_name        = "com.amazonaws.${var.aws_region}.ssm"
-  vpc_endpoint_type   = "Interface"
-  subnet_ids          = values(aws_subnet.private)[*].id
-  private_dns_enabled = true
-  security_group_ids  = [aws_security_group.vpce.id]
-
-  tags = {
-    Name = "${var.name}-ssm-endpoint"
-  }
-}
-
-resource "aws_vpc_endpoint" "ssmmessages" {
-  vpc_id              = aws_vpc.vpc.id
-  service_name        = "com.amazonaws.${var.aws_region}.ssmmessages"
-  vpc_endpoint_type   = "Interface"
-  subnet_ids          = values(aws_subnet.private)[*].id
-  private_dns_enabled = true
-  security_group_ids  = [aws_security_group.vpce.id]
-
-  tags = {
-    Name = "${var.name}-ssmmessages-endpoint"
-  }
-}
-
-resource "aws_vpc_endpoint" "ec2messages" {
-  vpc_id              = aws_vpc.vpc.id
-  service_name        = "com.amazonaws.${var.aws_region}.ec2messages"
-  vpc_endpoint_type   = "Interface"
-  subnet_ids          = values(aws_subnet.private)[*].id
-  private_dns_enabled = true
-  security_group_ids  = [aws_security_group.vpce.id]
-
-  tags = {
-    Name = "${var.name}-ec2messages-endpoint"
-  }
 }

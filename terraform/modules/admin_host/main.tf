@@ -1,6 +1,7 @@
 data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
 
+# IAM role for admin host (SSM access)
 resource "aws_iam_role" "admin_ssm_role" {
   name = "admin-ssm-role-${var.env}"
 
@@ -46,40 +47,42 @@ resource "aws_iam_role_policy_attachment" "eks_access_attach" {
   policy_arn = aws_iam_policy.eks_access.arn
 }
 
-resource "aws_iam_policy" "terraform_state_s3_access" {
-  name = "admin-s3-terraform-state-${var.env}"
+# resource "aws_iam_policy" "terraform_state_s3_access" {
+#   name = "admin-s3-terraform-state-${var.env}"
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect   = "Allow"
-        Action   = ["s3:ListBucket"]
-        Resource = var.terraform_state_bucket_arn
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:GetObject",
-          "s3:PutObject",
-          "s3:DeleteObject"
-        ]
-        Resource = "${var.terraform_state_bucket_arn}/*"
-      }
-    ]
-  })
-}
+#   policy = jsonencode({
+#     Version = "2012-10-17"
+#     Statement = [
+#       {
+#         Effect   = "Allow"
+#         Action   = ["s3:ListBucket"]
+#         Resource = var.terraform_state_bucket_arn
+#       },
+#       {
+#         Effect = "Allow"
+#         Action = [
+#           "s3:GetObject",
+#           "s3:PutObject",
+#           "s3:DeleteObject"
+#         ]
+#         Resource = "${var.terraform_state_bucket_arn}/*"
+#       }
+#     ]
+#   })
+# }
 
-resource "aws_iam_role_policy_attachment" "admin_s3_access_attach" {
-  role       = aws_iam_role.admin_ssm_role.name
-  policy_arn = aws_iam_policy.terraform_state_s3_access.arn
-}
+# resource "aws_iam_role_policy_attachment" "admin_s3_access_attach" {
+#   role       = aws_iam_role.admin_ssm_role.name
+#   policy_arn = aws_iam_policy.terraform_state_s3_access.arn
+# }
 
+# Instance profile for EC2
 resource "aws_iam_instance_profile" "admin_ssm_profile" {
   name = "admin-ssm-instance-profile-${var.env}"
   role = aws_iam_role.admin_ssm_role.name
 }
 
+# Admin EC2 instance (bastion via SSM)
 resource "aws_instance" "admin_host" {
   ami                    = var.ami_id
   instance_type          = var.instance_type

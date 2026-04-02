@@ -1,7 +1,7 @@
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
-# CI user (for GitHub Actions)
+# CI user (for GitHub Actions/Jenkins)
 resource "aws_iam_user" "this" {
   name          = var.user_name
   force_destroy = true
@@ -18,7 +18,7 @@ resource "aws_iam_user_policy_attachment" "this" {
   policy_arn = each.value
 }
 
-# service users
+# Service users (for map-service)
 resource "aws_iam_user" "service" {
   for_each = var.service_users
 
@@ -31,6 +31,7 @@ resource "aws_iam_access_key" "service" {
   user = aws_iam_user.service[each.key].name
 }
 
+# Allow map-service access to S3 + Secrets Manager
 resource "aws_iam_user_policy" "service_s3" {
   for_each = var.service_users
 
@@ -63,7 +64,7 @@ resource "aws_iam_user_policy" "service_s3" {
   })
 }
 
-# team role
+# Team role (for humans)
 resource "aws_iam_role" "team_access" {
   name = "team-access-${var.env}"
 
@@ -81,7 +82,7 @@ resource "aws_iam_role" "team_access" {
   })
 }
 
-# EKS role
+# EKS admin role (assumed by team role)
 resource "aws_iam_role" "eks_admin" {
   name = "eks-admin-${var.env}"
 
@@ -99,7 +100,7 @@ resource "aws_iam_role" "eks_admin" {
   })
 }
 
-# allow team -> admin
+# Allow team to assume EKS admin role
 resource "aws_iam_policy" "team_assume_eks_admin" {
   name = "team-assume-eks-admin-${var.env}"
 
@@ -120,27 +121,8 @@ resource "aws_iam_role_policy_attachment" "team_assume_attach" {
   policy_arn = aws_iam_policy.team_assume_eks_admin.arn
 }
 
-resource "aws_iam_policy" "eks_admin_access" {
-  name = "eks-admin-access-${var.env}"
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect   = "Allow"
-        Action   = ["eks:DescribeCluster"]
-        Resource = var.eks_cluster_arn
-      }
-    ]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "eks_admin_access_attach" {
-  role       = aws_iam_role.eks_admin.name
-  policy_arn = aws_iam_policy.eks_admin_access.arn
-}
-
-resource "aws_iam_role_policy_attachment" "eks_admin_readonly_attach" {
+# Attach AWS managed policies
+resource "aws_iam_role_policy_attachment" "eks_admin_readonly" {
   role       = aws_iam_role.eks_admin.name
   policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
 }
@@ -150,40 +132,42 @@ resource "aws_iam_role_policy_attachment" "eks_admin_ecr" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
 }
 
-# S3 access for Terraform state
-resource "aws_iam_policy" "eks_admin_s3_state_access" {
-  name = "eks-admin-s3-state-${var.env}"
+# # S3 access for Terraform state
+# resource "aws_iam_policy" "eks_admin_s3_state_access" {
+#   name = "eks-admin-s3-state-${var.env}"
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:ListBucket"
-        ]
-        Resource = "arn:aws:s3:::secret-society-tf-state-deploysquad"
-      },
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:GetObject",
-          "s3:PutObject",
-          "s3:DeleteObject"
-        ]
-        Resource = "arn:aws:s3:::secret-society-tf-state-deploysquad/*"
-      }
-    ]
-  })
-}
+#   policy = jsonencode({
+#     Version = "2012-10-17"
+#     Statement = [
+#       {
+#         Effect = "Allow"
+#         Action = [
+#           "s3:ListBucket"
+#         ]
+#         Resource = "arn:aws:s3:::secret-society-tf-state-deploysquad"
+#       },
+#       {
+#         Effect = "Allow"
+#         Action = [
+#           "s3:GetObject",
+#           "s3:PutObject",
+#           "s3:DeleteObject"
+#         ]
+#         Resource = "arn:aws:s3:::secret-society-tf-state-deploysquad/*"
+#       }
+#     ]
+#   })
+# }
 
-resource "aws_iam_role_policy_attachment" "eks_admin_s3_state_attach" {
-  role       = aws_iam_role.eks_admin.name
-  policy_arn = aws_iam_policy.eks_admin_s3_state_access.arn
-}
+# resource "aws_iam_role_policy_attachment" "eks_admin_s3_state_attach" {
+#   role       = aws_iam_role.eks_admin.name
+#   policy_arn = aws_iam_policy.eks_admin_s3_state_access.arn
+# }
 
 # SSM access to admin host
-resource "aws_iam_policy" "eks_admin_ssm_access" {
+resource "aws_iam_policy" "eks_admin_ssm" {
+  count = var.admin_host_instance_arn != null ? 1 : 0
+
   name = "eks-admin-ssm-${var.env}"
 
   policy = jsonencode({
@@ -205,26 +189,18 @@ resource "aws_iam_policy" "eks_admin_ssm_access" {
       {
         Effect = "Allow"
         Action = [
-          "ssmmessages:CreateControlChannel",
-          "ssmmessages:CreateDataChannel",
-          "ssmmessages:OpenControlChannel",
-          "ssmmessages:OpenDataChannel"
-        ]
-        Resource = "*"
-      },
-      {
-        Effect = "Allow"
-        Action = [
+          "ssmmessages:*",
           "ssm:DescribeInstanceInformation"
         ]
         Resource = "*"
-      }
+      },
     ]
   })
 }
 
 resource "aws_iam_role_policy_attachment" "eks_admin_ssm_attach" {
+  count      = var.admin_host_instance_arn != null ? 1 : 0
   role       = aws_iam_role.eks_admin.name
-  policy_arn = aws_iam_policy.eks_admin_ssm_access.arn
+  policy_arn = aws_iam_policy.eks_admin_ssm[0].arn
 }
   

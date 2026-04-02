@@ -35,6 +35,6 @@ variable "admin_host_instance_arn" {
 }
 
 variable "eks_cluster_arn" {
-  description = "ARN of the EKS cluster"
+  description = "EKS cluster ARN"
   type        = string
 }

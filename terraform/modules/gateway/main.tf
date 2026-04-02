@@ -1,7 +1,11 @@
 # Install Gateway API CRDs
 resource "null_resource" "gateway_api_crds" {
+  triggers = {
+    version = "v1.5.0"
+  }
+
   provisioner "local-exec" {
-    command = "kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.1.0/standard-install.yaml"
+    command = "kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.0/standard-install.yaml"
   }
 }
 

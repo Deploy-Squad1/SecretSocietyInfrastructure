@@ -1,0 +1,3 @@
+team_user_arns = [
+  "arn:aws:iam::<account>:user/<your-user>"
+]

@@ -132,38 +132,6 @@ resource "aws_iam_role_policy_attachment" "eks_admin_ecr" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
 }
 
-# # S3 access for Terraform state
-# resource "aws_iam_policy" "eks_admin_s3_state_access" {
-#   name = "eks-admin-s3-state-${var.env}"
-
-#   policy = jsonencode({
-#     Version = "2012-10-17"
-#     Statement = [
-#       {
-#         Effect = "Allow"
-#         Action = [
-#           "s3:ListBucket"
-#         ]
-#         Resource = "arn:aws:s3:::secret-society-tf-state-deploysquad"
-#       },
-#       {
-#         Effect = "Allow"
-#         Action = [
-#           "s3:GetObject",
-#           "s3:PutObject",
-#           "s3:DeleteObject"
-#         ]
-#         Resource = "arn:aws:s3:::secret-society-tf-state-deploysquad/*"
-#       }
-#     ]
-#   })
-# }
-
-# resource "aws_iam_role_policy_attachment" "eks_admin_s3_state_attach" {
-#   role       = aws_iam_role.eks_admin.name
-#   policy_arn = aws_iam_policy.eks_admin_s3_state_access.arn
-# }
-
 # SSM access to admin host
 resource "aws_iam_policy" "eks_admin_ssm" {
   count = var.admin_host_instance_arn != null ? 1 : 0

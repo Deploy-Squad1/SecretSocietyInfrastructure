@@ -27,9 +27,5 @@ variable "security_group_id" {
 variable "eks_cluster_arn" {
   description = "ARN of the EKS cluster"
   type        = string
-}
-
-variable "terraform_state_bucket_arn" {
-  description = "ARN of the State bucket"
-  type        = string
+  default     = null
 }

@@ -3,3 +3,35 @@ provider "aws" {
 
   allowed_account_ids = ["485141927994"]
 }
+
+provider "kubernetes" {
+  host                   = "https://F2D18F4CF134094C6EF2588AD56FA2BE.yl4.eu-north-1.eks.amazonaws.com:8443"
+  cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+
+  exec {
+    api_version = "client.authentication.k8s.io/v1"
+    command     = "aws"
+    args = [
+      "--region", "eu-north-1",
+      "eks", "get-token",
+      "--cluster-name", module.eks.cluster_name
+    ]
+  }
+}
+
+provider "helm" {
+  kubernetes = {
+    host                   = "https://F2D18F4CF134094C6EF2588AD56FA2BE.yl4.eu-north-1.eks.amazonaws.com:8443"
+    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
+
+    exec = {
+      api_version = "client.authentication.k8s.io/v1"
+      command     = "aws"
+      args = [
+        "--region", "eu-north-1",
+        "eks", "get-token",
+        "--cluster-name", module.eks.cluster_name
+      ]
+    }
+  }
+}

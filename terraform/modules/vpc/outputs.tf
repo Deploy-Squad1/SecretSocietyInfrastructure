@@ -10,11 +10,6 @@ output "private_subnet_ids" {
   ]
 }
 
-output "cidr" {
-  description = "CIDR block of the VPC"
-  value       = aws_vpc.vpc.cidr_block
-}
-
 output "public_subnet_ids" {
   description = "List of public subnet IDs"
   value = [
@@ -22,7 +17,22 @@ output "public_subnet_ids" {
   ]
 }
 
-output "vpce_security_group_id" {
-  description = "Security group ID used by interface VPC endpoints"
-  value       = aws_security_group.vpce.id
+output "cidr" {
+  description = "CIDR block of the VPC"
+  value       = aws_vpc.vpc.cidr_block
+}
+
+output "nat_gateway_id" {
+  description = "ID of the NAT Gateway"
+  value       = aws_nat_gateway.nat.id
+}
+
+output "private_route_table_id" {
+  description = "Private route table ID"
+  value       = aws_route_table.private.id
+}
+
+output "public_route_table_id" {
+  description = "Public route table ID"
+  value       = aws_route_table.public.id
 }

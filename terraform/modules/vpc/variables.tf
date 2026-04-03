@@ -7,8 +7,3 @@ variable "cidr" {
   description = "CIDR block for the VPC"
   type        = string
 }
-
-variable "aws_region" {
-  description = "AWS region used for VPC endpoint service names"
-  type        = string
-}

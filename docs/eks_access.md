@@ -1,66 +1,70 @@
-# EKS Access (dev)
+# EKS Access (stage)
 
 The cluster is private (no public endpoint). Access is done via IAM roles + SSM.
 
-## 1.  AWS profile
+## 1. AWS profile
 
-Add to `~/.aws/config`:
+Ensure you have 'stage' and (optionally) 'prod' profiles configured in  `~/.aws/config`:
 
 ```bash
-[profile team]
-role_arn = arn:aws:iam::ACCOUNT_ID:role/team-access-dev
+[profile stage]
+role_arn = arn:aws:iam::485141927994:role/TerraformDeployRole
 source_profile = YOUR_SOURCE_PROFILE
 region = eu-north-1
 
-[profile eks-admin]
-role_arn = arn:aws:iam::ACCOUNT_ID:role/eks-admin-dev
-source_profile = team
+[profile prod]
+role_arn = arn:aws:iam::963947738852:role/TerraformDeployRole
+source_profile = YOUR_SOURCE_PROFILE
 region = eu-north-1
 ```
 
-- ACCOUNT_ID - refers to the AWS accout ID (dev)
 - YOUR_SOURCE_PROFILE - refers to your AWS profile with access to the dev account (e.g. iac, default, etc)
+- For now we use only 'stage' for deployments.
 
 Verify:
 
-`aws sts get-caller-identity --profile eks-admin`
+`aws sts get-caller-identity --profile stage`
 
-## 2. Access via admin host
-
-Set profile:
-
-`export AWS_PROFILE=eks-admin`
-
-Start SSM session:
-
-`aws ssm start-session --target <admin_host_instance_id>`
-
-Inside EC2:
+## 2. Update kubeconfig
 
 ```bash
 aws eks update-kubeconfig \
-  --name secret-society-dev \
+  --name secret-society-stage \
   --region eu-north-1
-
-kubectl get nodes
 ```
 
-## 3. Optional: access via SSM tunel
+## 3. Fix TLS (hosts mapping)
 
-Start port-forwarding:
+To avoid TLS certificate mismatch, map the EKS endpoint to localhost:
 
 ```bash
+sudo nano /etc/hosts
+```
+
+Add:
+
+```bash
+127.0.0.1 <EKS_ENDPOINT>
+```
+
+## 4. Start SSM tunnel to EKS API
+
+```bash
+export AWS_PROFILE=stage
+
 aws ssm start-session \
   --target <admin_host_instance_id> \
   --document-name AWS-StartPortForwardingSessionToRemoteHost \
   --parameters '{"host":["<EKS_ENDPOINT>"],"portNumber":["443"],"localPortNumber":["8443"]}'
 ```
 
-Then configure kubeconfig to use:
+## 5. Verify access
 
-https://localhost:8443
+```bash
+kubectl get nodes
+```
 
 ## Notes
 
-- Access works only from inside VPC (via SSM)
-- If access fails, check your AWS profile (eks-admin)
+- Tunnel must remain active while using kubectl (use another terminal)
+- If connection fails, verify that SSM session is active and the correct cluster endpoint is used.

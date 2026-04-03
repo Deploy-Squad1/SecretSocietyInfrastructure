@@ -1,36 +1,34 @@
 # Install Gateway API CRDs
 resource "null_resource" "gateway_api_crds" {
+  triggers = {
+    version = "v1.5.0"
+  }
+
   provisioner "local-exec" {
-    command = <<EOT
-kubectl apply -f ${path.module}/files/standard-install.yaml
-EOT
+    command = "kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.5.0/standard-install.yaml"
   }
 }
 
 # Install NGINX Gateway Fabric controller
 resource "helm_release" "nginx_gateway" {
   name             = "nginx-gateway"
-  chart            = "${path.module}/nginx-gateway-fabric"
+  repository       = "oci://ghcr.io/nginxinc/charts"
+  chart            = "nginx-gateway-fabric"
   namespace        = "nginx-gateway"
   create_namespace = true
 
-  recreate_pods = true
-
-  depends_on = [
-    null_resource.gateway_api_crds
-  ]
+  depends_on = [null_resource.gateway_api_crds]
 
   values = [
     yamlencode({
+      service = {
+        type = "LoadBalancer"
+      }
+
       nginxGateway = {
         image = {
-          repository = var.image_repository
-          tag        = var.image_tag
-        }
-
-        # Temporary: disable TLS so controller listens on HTTP
-        tls = {
-          enable = false
+          repository = var.gateway_image_repository
+          tag        = var.gateway_image_tag
         }
       }
     })

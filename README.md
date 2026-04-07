@@ -18,11 +18,14 @@ Each environment:
 
 ## Managed resources
 
-- networking: VPC, subnets, internet gateway, route tables, security groups, VPC endpoints
+- networking: VPC, subnets, internet gateway, route tables, security groups
 - compute: EKS cluster, managed node group
 - data: RDS PostgreSQL, S3 media bucket
 - containers: ECR repositories
 - access and secrets: IAM users/policies, AWS Secrets Manager
+- ingress: Kubernetes Gateway API (NGINX Gateway Fabric)
+- DNS (partial): Route53 hosted zone and records (currently stage environment)
+- TLS: cert-manager with Let's Encrypt
 - state: Terraform remote state (S3)
 
 ## Prerequisites
@@ -58,12 +61,27 @@ Used by map-service for file uploads.
 
 ## Secrets
 
-Secrets are stored in AWS Secrets Manager and are environment-specific:
+Secrets are stored in AWS Secrets Manager and are environment-specific.
 
-`secret-society/map-service-<env>`
+### Application secrets
 
-- dev: configured (map-service-dev)
-- stage/prod: not iitialized yet
+Managed via Terraform:
+
+`secret-society/<service>-<env>`
+
+Example: `secret-society/map-service`
+
+Used for application configuration (e.g. API keys).
+
+### RDS database secret
+
+AWS automatically creates a secret for the RDS instance:
+
+`rds!db-<random>`
+
+- contains database credentials (username/password)
+- managed by AWS
+- rotated and maintained by RDS
 
 A Makefile helper is provided to retrieve secrets from AWS Secrets Manager.
 
@@ -85,7 +103,6 @@ make env ENV=<env> AWS_PROFILE=<profile>
 - Secrets are not managed by Terraform values (only the secret container is managed)
 - AWS credentials are currently used for development (IAM user)
 - stage/prod access via TerraformDeployRole (configure in ~/.aws/config)
-- Planned improvement: congifure EKS Pod Identity agent instead of IAM user
-  
-To reduce AWS costs, destroy the dev environment when it's not needed for a period of time (e.g. overnight/weekends).
+- Admin access to the cluster is provided via admid host (bastion EC2 using SSM). Documentation can be seen in docs/eks_access.md.
+- DNS records must be updated if LoadBalancer is recreated.
   

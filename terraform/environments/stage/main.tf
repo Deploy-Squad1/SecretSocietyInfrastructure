@@ -181,6 +181,7 @@ module "admin_host" {
   eks_cluster_arn = module.eks.cluster_arn
 }
 
+# EC2
 module "ec2" {
   source = "../../modules/ec2"
 
@@ -192,11 +193,42 @@ module "ec2" {
   security_group_id = module.security.jenkins_sg_id
 }
 
+# Gateway
 module "gateway" {
   source = "../../modules/gateway"
 
-  gateway_image_repository = "ghcr.io/nginxinc/nginx-gateway-fabric"
-  gateway_image_tag        = "latest"
+  gateway_hostname = var.app_domain
+  app_namespace    = "secret-society"
+}
+
+# Route53 hosted zone
+resource "aws_route53_zone" "main" {
+  name = var.domain_name
+
+  tags = {
+    Environment = "stage"
+  }
+}
+
+# DNS
+resource "aws_route53_record" "app" {
+  zone_id = aws_route53_zone.main.zone_id
+  name    = var.app_domain
+  type    = "A"
+
+  alias {
+    name                   = var.lb_dns_name
+    zone_id                = var.lb_zone_id
+    evaluate_target_health = false
+  }
+}
+
+# TLS
+module "cert_manager" {
+  source = "../../modules/cert_manager"
+
+  app_namespace = "secret-society"
+  app_domain    = var.app_domain
 }
 
 resource "aws_security_group_rule" "admin_host_to_eks_api" {

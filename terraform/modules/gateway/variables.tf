@@ -1,9 +1,9 @@
-variable "gateway_image_repository" {
-  description = "ECR repository for nginx gateway fabric"
+variable "gateway_hostname" {
+  description = "Hostname for the Gateway listener"
   type        = string
 }
 
-variable "gateway_image_tag" {
-  description = "Image tag"
+variable "app_namespace" {
+  description = "Namespace where application and Gateway reside"
   type        = string
 }

@@ -24,13 +24,63 @@ resource "helm_release" "nginx_gateway" {
       service = {
         type = "LoadBalancer"
       }
-
-      nginxGateway = {
-        image = {
-          repository = var.gateway_image_repository
-          tag        = var.gateway_image_tag
-        }
-      }
     })
   ]
+}
+
+# Gateway resource
+resource "kubernetes_manifest" "gateway" {
+  manifest = {
+    apiVersion = "gateway.networking.k8s.io/v1"
+    kind       = "Gateway"
+    metadata = {
+      name      = "nginx-gateway"
+      namespace = var.app_namespace
+    }
+    spec = {
+      gatewayClassName = "nginx"
+      listeners = [
+        {
+          name     = "http"
+          port     = 80
+          protocol = "HTTP"
+
+          hostname = var.gateway_hostname
+
+          allowedRoutes = {
+            namespaces = {
+              from = "Same"
+            }
+          }
+        },
+        {
+          name     = "https"
+          port     = 443
+          protocol = "HTTPS"
+
+          tls = {
+            mode = "Terminate"
+            certificateRefs = [
+              {
+                kind = "Secret"
+                name = "app-tls"
+              }
+            ]
+          }
+
+          allowedRoutes = {
+            namespaces = {
+              from = "Same"
+            }
+          }
+        }
+      ]
+    }
+  }
+
+  depends_on = [helm_release.nginx_gateway]
+
+  field_manager {
+    force_conflicts = true
+  }
 }

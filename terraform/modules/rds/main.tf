@@ -19,10 +19,8 @@ resource "aws_db_instance" "rds" {
   allocated_storage = var.allocated_storage
   db_name           = var.db_name
   username          = var.username
+  password          = var.password
   port              = var.port
-
-  # AWS manages password in Secret Manager
-  manage_master_user_password = true
 
   db_subnet_group_name   = aws_db_subnet_group.subnet_group.name
   vpc_security_group_ids = var.security_group_ids

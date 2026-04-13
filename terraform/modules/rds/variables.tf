@@ -25,6 +25,12 @@ variable "port" {
   default     = 5432
 }
 
+variable "password" {
+  description = "Database password"
+  type        = string
+  sensitive   = true
+}
+
 variable "instance_class" {
   description = "RDS instance type"
   default     = "db.t3.micro"

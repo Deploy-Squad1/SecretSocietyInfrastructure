@@ -7,6 +7,17 @@ resource "aws_db_subnet_group" "subnet_group" {
   }
 }
 
+resource "aws_db_parameter_group" "rds_ssl" {
+  name   = "${var.name}-pg"
+  family = "postgres18"
+
+  parameter {
+    name         = "rds.force_ssl"
+    value        = "0"
+    apply_method = "immediate"
+  }
+}
+
 resource "aws_db_instance" "rds" {
   identifier     = var.name
   engine         = "postgres"
@@ -21,6 +32,8 @@ resource "aws_db_instance" "rds" {
   username          = var.username
   password          = var.password
   port              = var.port
+
+  parameter_group_name = aws_db_parameter_group.rds_ssl.name
 
   db_subnet_group_name   = aws_db_subnet_group.subnet_group.name
   vpc_security_group_ids = var.security_group_ids

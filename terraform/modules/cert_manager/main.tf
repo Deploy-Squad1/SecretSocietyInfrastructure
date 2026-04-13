@@ -36,7 +36,7 @@ resource "kubernetes_manifest" "cluster_issuer" {
               gatewayHTTPRoute = {
                 parentRefs = [
                   {
-                    name      = "nginx-gateway"
+                    name      = "main-gateway"
                     namespace = var.app_namespace
                     kind      = "Gateway"
                   }

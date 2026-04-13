@@ -1,11 +1,53 @@
+# Copy this file to stage.auto.tfvars and adjust values
+
+environment = "stage"
+
 team_user_arns = [
   "arn:aws:iam::<account>:user/<your-user>"
 ]
 
+vpc_name = "secret-society-stage"
+vpc_cidr = "10.0.0.0/16"
+
+ecr_repositories = [
+  "core-service",
+  "frontend-service",
+  "email-service",
+  "map-service",
+  "voting-service",
+  "nginx-gateway-fabric",
+  "nginx-gateway-nginx"
+]
+
+eks_name    = "secret-society-stage"
+eks_version = "1.35"
+
+node_instance_types = ["t3.small"]
+node_min_size       = 1
+node_max_size       = 4
+node_desired_size   = 3
+
+rds_name           = "secret-society-stage-db"
+rds_instance_class = "db.t3.micro"
+
+db_name = "secretsociety"
+db_user = "app_user"
+db_port = 5432
+
+rds_skip_final_snapshot     = false
+rds_deletion_protection     = false
+rds_backup_retention_period = 1
+
+media_bucket_name     = "secret-society-media-ds-stage"
+media_allowed_origins = ["http://localhost:5173"]
+
+admin_instance_type   = "t3.micro"
+jenkins_instance_type = "t3.small"
+
 domain_name = "example.com"
 app_domain  = "app.example.com"
 
-# DNS name of the AWS LoadBalancer created by Gateway service
+# DNS name of the AWS LoadBalancer created by Gateway (from kubectl get svc)
 lb_dns_name = "<elb-dns-name-from-kubectl-get-svc>"
 
 # Hosted zone ID of that LoadBalancer

@@ -243,6 +243,14 @@ module "splunk" {
   cluster_name = module.eks.cluster_name
 }
 
+# Metrics
+module "metrics_server" {
+  source = "../../modules/metrics-server"
+
+  namespace         = "kube-system"
+  helm_release_name = "metrics-server"
+}
+
 resource "aws_security_group_rule" "admin_host_to_eks_api" {
   description              = "Allow admin host to access EKS API"
   type                     = "ingress"

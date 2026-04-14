@@ -133,3 +133,14 @@ variable "jenkins_instance_type" {
   description = "Instance type for Jenkins EC2 instance"
   type        = string
 }
+
+variable "splunk_hec_endpoint" {
+  description = "Splunk HEC endpoint URL used for log ingestion"
+  type        = string
+}
+
+variable "splunk_hec_token" {
+  description = "Authentication token for Splunk HEC"
+  type        = string
+  sensitive   = true
+}

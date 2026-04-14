@@ -52,3 +52,6 @@ lb_dns_name = "<elb-dns-name-from-kubectl-get-svc>"
 
 # Hosted zone ID of that LoadBalancer
 lb_zone_id  = "<elb-hosted-zone-id>"
+
+splunk_hec_endpoint = "https://<example-splunk-instance>.splunkcloud.com:8088/services/collector"
+splunk_hec_token = "example.replace-me"

@@ -18,23 +18,15 @@ data "aws_ami" "ubuntu" {
 module "ecr" {
   source = "../../modules/ecr"
 
-  repositories = [
-    "core-service",
-    "frontend-service",
-    "email-service",
-    "map-service",
-    "voting-service",
-    "nginx-gateway-fabric",
-    "nginx-gateway-nginx"
-  ]
+  repositories = var.ecr_repositories
 }
 
 # S3 bucket (media)
 module "s3" {
   source = "../../modules/s3"
 
-  bucket_name     = "secret-society-media-ds-stage"
-  allowed_origins = ["http://localhost:5173"]
+  bucket_name     = var.media_bucket_name
+  allowed_origins = var.media_allowed_origins
 }
 
 # Secrets Manager
@@ -45,15 +37,20 @@ data "aws_secretsmanager_secret" "map_service" {
 module "secrets" {
   source = "../../modules/secrets"
 
-  environment               = "stage"
+  environment               = var.environment
   create_map_service_secret = false
+
+  db_user = var.db_user
+  db_host = module.rds.endpoint
+  db_name = var.db_name
+  db_port = var.db_port
 }
 
 # IAM
 module "iam" {
   source = "../../modules/iam"
 
-  env            = "stage"
+  env            = var.environment
   user_name      = "github-actions"
   team_user_arns = var.team_user_arns
   # Attach only the policies this user actually needs
@@ -63,7 +60,7 @@ module "iam" {
 
   service_users = {
     "map-service" = {
-      bucket_name = "secret-society-media-ds-stage"
+      bucket_name = var.media_bucket_name
       secret_arn  = data.aws_secretsmanager_secret.map_service.arn
     }
   }
@@ -75,15 +72,15 @@ module "iam" {
 module "vpc" {
   source = "../../modules/vpc"
 
-  name = "secret-society-stage"
-  cidr = "10.10.0.0/16"
+  name = var.vpc_name
+  cidr = var.vpc_cidr
 }
 
 # Security groups
 module "security" {
   source = "../../modules/security"
 
-  name     = "secret-society-stage"
+  name     = "secret-society-${var.environment}"
   vpc_id   = module.vpc.vpc_id
   vpc_cidr = module.vpc.cidr
 }
@@ -92,34 +89,35 @@ module "security" {
 module "rds" {
   source = "../../modules/rds"
 
-  name               = "secret-society-stage-db"
+  name               = var.rds_name
   subnet_ids         = module.vpc.private_subnet_ids
   security_group_ids = [module.security.rds_sg_id]
 
-  db_name  = "secretsociety"
-  username = "app_user"
+  db_name  = var.db_name
+  username = var.db_user
+  password = module.secrets.db_password
 
-  instance_class = "db.t3.micro"
+  instance_class = var.rds_instance_class
 
-  skip_final_snapshot     = false
-  deletion_protection     = false
-  backup_retention_period = 1
+  skip_final_snapshot     = var.rds_skip_final_snapshot
+  deletion_protection     = var.rds_deletion_protection
+  backup_retention_period = var.rds_backup_retention_period
 }
 
 # EKS
 module "eks" {
   source = "../../modules/eks"
 
-  name               = "secret-society-stage"
-  kubernetes_version = "1.35"
+  name               = var.eks_name
+  kubernetes_version = var.eks_version
 
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnet_ids
 
-  node_instance_types = ["t3.small"]
-  node_min_size       = 1
-  node_max_size       = 3
-  node_desired_size   = 2
+  node_instance_types = var.node_instance_types
+  node_min_size       = var.node_min_size
+  node_max_size       = var.node_max_size
+  node_desired_size   = var.node_desired_size
 
   access_entries = {
     admin = {
@@ -163,7 +161,7 @@ module "eks" {
   }
 
   tags = {
-    environment = "stage"
+    environment = var.environment
   }
 }
 
@@ -171,9 +169,9 @@ module "eks" {
 module "admin_host" {
   source = "../../modules/admin_host"
 
-  env           = "stage"
+  env           = var.environment
   ami_id        = data.aws_ami.ubuntu.id
-  instance_type = "t3.micro"
+  instance_type = var.admin_instance_type
 
   subnet_id         = module.vpc.private_subnet_ids[0]
   security_group_id = module.security.admin_host_sg_id
@@ -185,9 +183,9 @@ module "admin_host" {
 module "ec2" {
   source = "../../modules/ec2"
 
-  env           = "stage"
+  env           = var.environment
   ami_id        = data.aws_ami.ubuntu.id
-  instance_type = "t3.small"
+  instance_type = var.jenkins_instance_type
 
   subnet_id         = module.vpc.public_subnet_ids[0]
   security_group_id = module.security.jenkins_sg_id
@@ -198,7 +196,7 @@ module "gateway" {
   source = "../../modules/gateway"
 
   gateway_hostname = var.app_domain
-  app_namespace    = "secret-society"
+  app_namespace    = "secret-society-${var.environment}"
 }
 
 # Route53 hosted zone
@@ -206,7 +204,7 @@ resource "aws_route53_zone" "main" {
   name = var.domain_name
 
   tags = {
-    Environment = "stage"
+    Environment = var.environment
   }
 }
 
@@ -227,7 +225,7 @@ resource "aws_route53_record" "app" {
 module "cert_manager" {
   source = "../../modules/cert_manager"
 
-  app_namespace = "secret-society"
+  app_namespace = "secret-society-${var.environment}"
   app_domain    = var.app_domain
 }
 

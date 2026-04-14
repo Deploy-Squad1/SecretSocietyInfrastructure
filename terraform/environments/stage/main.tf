@@ -229,6 +229,20 @@ module "cert_manager" {
   app_domain    = var.app_domain
 }
 
+# Monitoring
+module "splunk" {
+  source = "../../modules/splunk"
+
+  environment = var.environment
+  namespace   = "splunk"
+
+  splunk_hec_endpoint = var.splunk_hec_endpoint
+  splunk_hec_token    = var.splunk_hec_token
+  splunk_index        = "main"
+
+  cluster_name = module.eks.cluster_name
+}
+
 resource "aws_security_group_rule" "admin_host_to_eks_api" {
   description              = "Allow admin host to access EKS API"
   type                     = "ingress"

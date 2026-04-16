@@ -55,3 +55,6 @@ lb_zone_id  = "<elb-hosted-zone-id>"
 
 splunk_hec_endpoint = "https://<example-splunk-instance>.splunkcloud.com:8088/services/collector"
 splunk_hec_token = "example.replace-me"
+
+splunk_observability_realm = "eu1"
+splunk_observability_access_token = "example.replace-me"

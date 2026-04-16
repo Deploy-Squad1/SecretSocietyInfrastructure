@@ -240,6 +240,9 @@ module "splunk" {
   splunk_hec_token    = var.splunk_hec_token
   splunk_index        = "main"
 
+  splunk_observability_realm        = var.splunk_observability_realm
+  splunk_observability_access_token = var.splunk_observability_access_token
+
   cluster_name = module.eks.cluster_name
 }
 

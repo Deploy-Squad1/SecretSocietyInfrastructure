@@ -27,6 +27,7 @@ Each environment:
 - DNS (partial): Route53 hosted zone and records (currently stage environment)
 - TLS: cert-manager with Let's Encrypt
 - state: Terraform remote state (S3)
+- monitoring: Splunk Cloud and Splunk Observability
 
 ## Prerequisites
 
@@ -96,6 +97,20 @@ Generate a local .env file automatically:
 ```bash
 make env ENV=<env> AWS_PROFILE=<profile>
 ```
+
+## Monitoring
+
+Monitoring is implemented using Splunk.
+
+### Logs
+
+- collected via Splunk OTel Collector and sent to Splunk Cloud (HEC)
+- available in Splunk, e.g.: `index=main`, `index=main k8s.namespace.name=secret-society-stage`, `index=main k8s.pod.name=frontend*`
+
+### Metrics
+
+- Kubernetes metrics enabled via metrics-server (`kubectl top`)
+- CPU and other metrics available in Splunk Observability
 
 ## Notes
 

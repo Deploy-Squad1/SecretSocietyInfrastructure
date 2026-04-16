@@ -8,6 +8,8 @@ resource "helm_release" "splunk_otel" {
 
   values = [
     yamlencode({
+      clusterName = var.cluster_name
+
       splunkPlatform = {
         endpoint           = var.splunk_hec_endpoint
         token              = var.splunk_hec_token
@@ -15,7 +17,10 @@ resource "helm_release" "splunk_otel" {
         insecureSkipVerify = true
       }
 
-      clusterName = var.cluster_name
+      splunkObservability = {
+        realm       = var.splunk_observability_realm
+        accessToken = var.splunk_observability_access_token
+      }
     })
   ]
 }

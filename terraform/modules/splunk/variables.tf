@@ -29,3 +29,14 @@ variable "cluster_name" {
   description = "Name of the kubernetes cluster"
   type        = string
 }
+
+variable "splunk_observability_realm" {
+  description = "Splunk Observability Cloud realm used for metrics ingestion"
+  type        = string
+}
+
+variable "splunk_observability_access_token" {
+  description = "Accesss token for Splunk obserability Cloud used by the collector to send metrics"
+  type        = string
+  sensitive   = true
+}

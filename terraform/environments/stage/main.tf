@@ -229,6 +229,31 @@ module "cert_manager" {
   app_domain    = var.app_domain
 }
 
+# Monitoring
+module "splunk" {
+  source = "../../modules/splunk"
+
+  environment = var.environment
+  namespace   = "splunk"
+
+  splunk_hec_endpoint = var.splunk_hec_endpoint
+  splunk_hec_token    = var.splunk_hec_token
+  splunk_index        = "main"
+
+  splunk_observability_realm        = var.splunk_observability_realm
+  splunk_observability_access_token = var.splunk_observability_access_token
+
+  cluster_name = module.eks.cluster_name
+}
+
+# Metrics
+module "metrics_server" {
+  source = "../../modules/metrics-server"
+
+  namespace         = "kube-system"
+  helm_release_name = "metrics-server"
+}
+
 resource "aws_security_group_rule" "admin_host_to_eks_api" {
   description              = "Allow admin host to access EKS API"
   type                     = "ingress"

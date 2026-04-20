@@ -80,6 +80,9 @@ module "security" {
   name     = "secret-society-${var.environment}"
   vpc_id   = module.vpc.vpc_id
   vpc_cidr = module.vpc.cidr
+
+  cluster_security_group_id = module.eks.cluster_security_group_id
+  node_security_group_id    = module.eks.node_security_group_id
 }
 
 # RDS

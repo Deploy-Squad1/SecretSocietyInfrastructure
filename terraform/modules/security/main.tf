@@ -40,3 +40,16 @@ resource "aws_security_group" "admin_host" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
+
+# Allow Consul injector from EKS control plane to node group
+resource "aws_security_group_rule" "node_group_consul_connect_injector" {
+  type        = "ingress"
+  description = "Allow Consul connect injector from EKS control plane"
+
+  from_port = 8080
+  to_port   = 8080
+  protocol  = "tcp"
+
+  security_group_id        = var.node_security_group_id
+  source_security_group_id = var.cluster_security_group_id
+}

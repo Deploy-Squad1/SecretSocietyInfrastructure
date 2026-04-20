@@ -4,7 +4,7 @@ The cluster is private (no public endpoint). Access is done via IAM roles + SSM.
 
 ## 1. AWS profile
 
-Ensure you have 'stage' and (optionally) 'prod' profiles configured in  `~/.aws/config`:
+Ensure you have 'stage' and 'prod' profiles configured in  `~/.aws/config`:
 
 ```bash
 [profile stage]
@@ -19,17 +19,16 @@ region = eu-north-1
 ```
 
 - YOUR_SOURCE_PROFILE - refers to your AWS profile with access to the dev account (e.g. iac, default, etc)
-- For now we use only 'stage' for deployments.
 
 Verify:
 
-`aws sts get-caller-identity --profile stage`
+`aws sts get-caller-identity --profile <env>`
 
 ## 2. Update kubeconfig
 
 ```bash
 aws eks update-kubeconfig \
-  --name secret-society-stage \
+  --name secret-society-<env> \
   --region eu-north-1
 ```
 

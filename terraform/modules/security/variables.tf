@@ -14,3 +14,13 @@ variable "db_port" {
   description = "DB port to allow inbound traffic"
   default     = 5432
 }
+
+variable "cluster_security_group_id" {
+  description = "Security group ID of the EKS control plane"
+  type        = string
+}
+
+variable "node_security_group_id" {
+  description = "Security group ID of the EKS node group"
+  type        = string
+}

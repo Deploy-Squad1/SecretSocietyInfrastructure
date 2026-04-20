@@ -209,20 +209,6 @@ module "gateway" {
   app_namespace    = "secret-society-${var.environment}"
 }
 
-# DNS will be configured after application (Helm/Consul)
-# # DNS
-# resource "aws_route53_record" "prod_app" {
-#   zone_id = aws_route53_zone.main.zone_id
-#   name    = var.app_domain
-#   type    = "A"
-
-#   alias {
-#     name                   = var.lb_dns_name
-#     zone_id                = var.lb_zone_id
-#     evaluate_target_health = false
-#   }
-# }
-
 # TLS
 module "cert_manager" {
   source = "../../modules/cert_manager"

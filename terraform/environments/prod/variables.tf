@@ -63,26 +63,10 @@ variable "media_allowed_origins" {
   type        = list(string)
 }
 
-# variable "domain_name" {
-#   description = "Root domain name managed in Route 53"
-#   type        = string
-# }
-
 variable "app_domain" {
   description = "FQDN for the application"
   type        = string
 }
-
-# DNS will be configured after application (Helm/Consul)
-# variable "lb_dns_name" {
-#   description = "DNS name of the AWS Load Balancer created by Kubernetes"
-#   type        = string
-# }
-
-# variable "lb_zone_id" {
-#   description = "Hosted zone ID of the AWS Load Balancer (not Route53 zone)"
-#   type        = string
-# }
 
 variable "db_user" {
   description = "Database username"
